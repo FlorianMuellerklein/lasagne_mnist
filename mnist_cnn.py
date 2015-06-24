@@ -33,20 +33,23 @@ def floatX(X):
 def lasagne_model():
     l_in = InputLayer(shape=(None, 1, 28, 28))
 
-    l_conv1 = Conv2DLayer(l_in, num_filters = 32, filter_size=(3,3), nonlinearity=rectify)
-    l_conv1b = Conv2DLayer(l_conv1, num_filters = 32, filter_size=(3,3), nonlinearity=rectify)
+    l_conv1 = Conv2DLayer(l_in, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
+    l_conv1b = Conv2DLayer(l_conv1, num_filters = 128, filter_size=(3,3), nonlinearity=rectify)
     l_pool1 = MaxPool2DLayer(l_conv1b, pool_size=(2,2))
-    l_dropout1 = DropoutLayer(l_pool1, p=0.1)
+    l_dropout1 = DropoutLayer(l_pool1, p=0.2)
 
-    l_conv2 = Conv2DLayer(l_pool1, num_filters = 64, filter_size=(3,3), nonlinearity=rectify)
-    l_conv2b = Conv2DLayer(l_conv2, num_filters = 64, filter_size=(3,3), nonlinearity=rectify)
+    l_conv2 = Conv2DLayer(l_pool1, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
+    l_conv2b = Conv2DLayer(l_conv2, num_filters = 256, filter_size=(3,3), nonlinearity=rectify)
     l_pool2 = MaxPool2DLayer(l_conv2b, pool_size=(2,2))
     l_dropout2 = DropoutLayer(l_pool2, p=0.2)
 
-    l_hidden3 = DenseLayer(l_dropout2, num_units = 512, nonlinearity=rectify)
+    l_hidden3 = DenseLayer(l_dropout2, num_units = 1024, nonlinearity=rectify)
     l_dropout3 = DropoutLayer(l_hidden3, p=0.5)
 
-    l_out = DenseLayer(l_dropout3, num_units=10, nonlinearity=softmax)
+    l_hidden4 = DenseLayer(l_dropout3, num_units = 1024, nonlinearity=rectify)
+    l_dropout4 = DropoutLayer(l_hidden4, p=0.5)
+
+    l_out = DenseLayer(l_dropout4, num_units=10, nonlinearity=softmax)
 
     return l_out
 
