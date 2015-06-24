@@ -60,31 +60,39 @@ def main():
     X = T.ftensor4()
     Y = T.fmatrix()
 
+    # set up theano functions to generate output by feeding data through network
     output_layer = lasagne_model()
     output = helper.get_output(output_layer, X)
 
+    # set up the loss that we aim to minimize
     loss_train = T.mean(lasagne.objectives.categorical_crossentropy(output, Y))
 
+    # set up theano functions to generate outputs for the validation dataset
     output_valid = helper.get_output(output_layer, X, deterministic=True)
     loss_valid = T.mean(lasagne.objectives.categorical_crossentropy(output_valid, Y))
 
+    # prediction functions for classifications
     pred = T.argmax(output, axis=1)
     pred_valid = T.argmax(output_valid, axis=1)
 
+    # get parameters from network and set up sgd with nesterov momentum to update parameters
     params = helper.get_all_params(output_layer)
     updates = nesterov_momentum(loss_train, params, learning_rate=0.005, momentum=0.9)
 
+    # set up training and prediction functions
     train = theano.function(inputs=[X, Y], outputs=loss_train, updates=updates, allow_input_downcast=True)
     predict_valid = theano.function(inputs=[X], outputs=pred_valid, allow_input_downcast=True)
 
-    for i in range(50):
+    # loop over training functions for however many iterations, print information while training
+    for i in range(60):
         loss_train = batch_iterator(train_X, train_y, BATCHSIZE, train)
         print 'iter:', i, '| Tloss:', loss_train, '| valid acc:', np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
 
+    # after training create output for kaggle
     testing_inputs = load_test_data('data/test.csv')
     predictions = []
-    for i in range((testing_inputs.shape[0] + BATCHSIZE -1) // BATCHSIZE):
-        sl = slice(i * BATCHSIZE, (i + 1) * BATCHSIZE)
+    for j in range((testing_inputs.shape[0] + BATCHSIZE -1) // BATCHSIZE):
+        sl = slice(i * BATCHSIZE, (j + 1) * BATCHSIZE)
         X_batch = testing_inputs[sl]
         predictions.extend(predict_valid(X_batch))
     print len(predictions)
