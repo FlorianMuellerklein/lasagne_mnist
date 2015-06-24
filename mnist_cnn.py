@@ -54,7 +54,7 @@ def lasagne_model():
     return l_out
 
 def main():
-    # load the training and testing data sets
+    # load the training and validation data sets
     train_X, test_X, train_y, test_y = load_data_cv('data/train.csv')
 
     X = T.ftensor4()
@@ -63,12 +63,10 @@ def main():
     # set up theano functions to generate output by feeding data through network
     output_layer = lasagne_model()
     output = helper.get_output(output_layer, X)
+    output_valid = helper.get_output(output_layer, X, deterministic=True)
 
     # set up the loss that we aim to minimize
     loss_train = T.mean(lasagne.objectives.categorical_crossentropy(output, Y))
-
-    # set up theano functions to generate outputs for the validation dataset
-    output_valid = helper.get_output(output_layer, X, deterministic=True)
     loss_valid = T.mean(lasagne.objectives.categorical_crossentropy(output_valid, Y))
 
     # prediction functions for classifications
@@ -81,18 +79,20 @@ def main():
 
     # set up training and prediction functions
     train = theano.function(inputs=[X, Y], outputs=loss_train, updates=updates, allow_input_downcast=True)
+    valid = theano.function(inputs=[X, Y], outputs=loss_valid, allow_input_downcast=True)
     predict_valid = theano.function(inputs=[X], outputs=pred_valid, allow_input_downcast=True)
 
     # loop over training functions for however many iterations, print information while training
     for i in range(60):
-        loss_train = batch_iterator(train_X, train_y, BATCHSIZE, train)
-        print 'iter:', i, '| Tloss:', loss_train, '| valid acc:', np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
+        train_loss = batch_iterator(train_X, train_y, BATCHSIZE, train)
+        valid_loss = valid(test_X, test_y)
+        print 'iter:', i, '| Tloss:', train_loss, '| Vloss:', valid_loss, '| valid acc:', np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
 
     # after training create output for kaggle
     testing_inputs = load_test_data('data/test.csv')
     predictions = []
     for j in range((testing_inputs.shape[0] + BATCHSIZE -1) // BATCHSIZE):
-        sl = slice(i * BATCHSIZE, (j + 1) * BATCHSIZE)
+        sl = slice(j * BATCHSIZE, (j + 1) * BATCHSIZE)
         X_batch = testing_inputs[sl]
         predictions.extend(predict_valid(X_batch))
     print len(predictions)
