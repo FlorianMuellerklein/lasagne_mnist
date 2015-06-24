@@ -3,16 +3,12 @@ import pandas as pd
 
 import theano
 from theano import tensor as T
-from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
-from theano.tensor.nnet.conv import conv2d
-from theano.tensor.signal.downsample import max_pool_2d
 
 import lasagne
 from lasagne.nonlinearities import rectify, softmax, very_leaky_rectify
 from lasagne.updates import nesterov_momentum
 from lasagne.layers import InputLayer, MaxPool2DLayer, Conv2DLayer, DenseLayer, DropoutLayer, helper
 
-from random import randint, uniform
 from helpers import batch_iterator, load_data_cv, load_test_data
 
 import seaborn as sns
@@ -23,12 +19,9 @@ PIXELS = 28
 imageSize = PIXELS * PIXELS
 num_features = imageSize
 
-srng = RandomStreams()
-
 # set up functions needed to train the network
 def floatX(X):
     return np.asarray(X, dtype=theano.config.floatX)
-
 
 def lasagne_model():
     l_in = InputLayer(shape=(None, 1, 28, 28))
@@ -83,10 +76,33 @@ def main():
     predict_valid = theano.function(inputs=[X], outputs=pred_valid, allow_input_downcast=True)
 
     # loop over training functions for however many iterations, print information while training
+    train_eval = []
+    valid_eval = []
+    valid_acc = []
     for i in range(60):
         train_loss = batch_iterator(train_X, train_y, BATCHSIZE, train)
+        train_eval.append(train_loss)
         valid_loss = valid(test_X, test_y)
-        print 'iter:', i, '| Tloss:', train_loss, '| Vloss:', valid_loss, '| valid acc:', np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
+        valid_eval.append(valid_loss)
+        acc = np.mean(np.argmax(test_y, axis=1) == predict_valid(test_X))
+        valid_acc.append(acc)
+        print 'iter:', i, '| Tloss:', train_loss, '| Vloss:', valid_loss, '| valid acc:', acc
+
+    # plot loss and accuracy
+    train_eval = np.array(train_eval)
+    valid_eval = np.array(valid_eval)
+    valid_acc = np.array(valid_acc)
+    sns.set_style("whitegrid")
+    pyplot.plot(train_eval, linewidth = 3, label = 'train loss')
+    pyplot.plot(valid_eval, linewidth = 3, label = 'valid loss')
+    pyplot.legend(loc = 2)
+    pyplot.ylim([0,0.85])
+    pyplot.twinx()
+    pyplot.plot(valid_acc, linewidth = 3, label = 'valid accuracy', color = 'r')
+    pyplot.grid()
+    pyplot.ylim([0,1])
+    pyplot.legend(loc = 1)
+    pyplot.show()
 
     # after training create output for kaggle
     testing_inputs = load_test_data('data/test.csv')
@@ -95,7 +111,6 @@ def main():
         sl = slice(j * BATCHSIZE, (j + 1) * BATCHSIZE)
         X_batch = testing_inputs[sl]
         predictions.extend(predict_valid(X_batch))
-    print len(predictions)
     out = pd.read_csv('data/convnet_preds.csv')
     out['Label'] = predictions
     out.to_csv('preds/convnet_preds.csv', index = False)
