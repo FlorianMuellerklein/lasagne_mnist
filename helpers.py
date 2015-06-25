@@ -48,7 +48,7 @@ def batch_iterator(data, y, batchsize, train):
         trans_2 = randint(-3,3)
 
         # random zooms
-        zoom = uniform(1, 1.2)
+        zoom = uniform(0.8, 1.2)
 
         # shearing
         shear_deg = uniform(-10, 10)
