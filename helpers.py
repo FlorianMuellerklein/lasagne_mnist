@@ -84,6 +84,29 @@ def batch_iterator(data, y, batchsize, train):
 
     return np.mean(loss)
 
+def batch_iterator_no_aug(data, y, batchsize, train):
+    '''
+    Data augmentation batch iterator for feeding images into CNN.
+    This example will randomly rotate all images in a given batch between -10 and 10 degrees
+    and to random translations between -5 and 5 pixels in all directions.
+    Random zooms between 1 and 1.3.
+    Random shearing between -20 and 20 degrees.
+    Randomly applies sobel edge detector to 1/4th of the images in each batch.
+    Randomly inverts 1/2 of the images in each batch.
+    '''
+
+    n_samples = data.shape[0]
+    loss = []
+    for i in range((n_samples + batchsize -1) // batchsize):
+        sl = slice(i * batchsize, (i + 1) * batchsize)
+        X_batch = data[sl]
+        y_batch = y[sl]
+
+        loss.append(train(X_batch, y_batch))
+
+    return np.mean(loss)
+
+
 def one_hot(x,n):
 	if type(x) == list:
 		x = np.array(x)

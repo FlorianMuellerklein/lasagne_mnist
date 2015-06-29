@@ -95,7 +95,7 @@ def main():
         pass
 
     # save weights
-    all_params = lasagne.layers.get_all_params(output_layer)
+    all_params = helper.get_all_param_values(output_layer)
     f = gzip.open('data/weights.pklz', 'wb')
     pickle.dump(all_params, f)
     f.close()
@@ -113,18 +113,8 @@ def main():
     pyplot.grid()
     pyplot.ylim([.9,1])
     pyplot.legend(loc = 1)
-    pyplot.show()
-
-    # after training create output for kaggle
-    testing_inputs = load_test_data('data/test.csv')
-    predictions = []
-    for j in range((testing_inputs.shape[0] + BATCHSIZE -1) // BATCHSIZE):
-        sl = slice(j * BATCHSIZE, (j + 1) * BATCHSIZE)
-        X_batch = testing_inputs[sl]
-        predictions.extend(predict_valid(X_batch))
-    out = pd.read_csv('data/convnet_preds.csv')
-    out['Label'] = predictions
-    out.to_csv('preds/convnet_preds.csv', index = False)
+    pyplot.savefig('data/training_plot.png')
+    #pyplot.show()
 
 if __name__ == '__main__':
     main()
